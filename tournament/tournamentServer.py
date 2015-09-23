@@ -100,7 +100,10 @@ class tournamentServer(QtNetwork.QTcpServer):
                                     query.first() 
                                     name = query.value(0)
                                     self.logger.debug("player is replaced by %s", name)
-                                    challonge.participants.update(uid, p["id"], name=str(name))                                    
+                                    try:
+                                        challonge.participants.update(uid, p["id"], name=str(name))
+                                    except ChallongeException:
+                                        pass
 
 
                         if fafuid:
