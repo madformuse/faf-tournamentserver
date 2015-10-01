@@ -159,9 +159,11 @@ class tournamentServer(QtNetwork.QTcpServer):
                                     challonge.participants.update(uid, p["id"], name=str(name))
 
 
-                        participant = {}
-                        participant["id"]   = p["id"]
-                        participant["name"] = name
+                        participant = {
+                            "id":   p["id"],
+                            "name": name
+                        }
+
                         self.tournaments[uid]["participants"].append(participant)
             
                 # if self.tournaments[uid]["state"] == "started":
