@@ -70,6 +70,7 @@ class start(QObject):
         # Initialize API with credentials
         challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
         updater = tournamentServer(self,db)
+        updater.importTournaments()
         updater.startUpdateTimer()
 
         return updater

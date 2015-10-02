@@ -32,7 +32,7 @@ class tournamentServer(QtNetwork.QTcpServer):
         self.db = db
 
         self.tournaments = {}
-        self.importTournaments()
+
 
     def startUpdateTimer(self):
         self.updateTimer = QtCore.QTimer()
