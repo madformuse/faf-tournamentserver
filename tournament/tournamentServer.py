@@ -25,13 +25,11 @@ from . import tournamentServerThread
 import challonge
 
 class tournamentServer(QtNetwork.QTcpServer):
-    def __init__(self, parent=None):
-        super(tournamentServer, self).__init__(parent)
+    def __init__(self, db):
         self.logger = logging.getLogger(__name__)
-        self.parent = parent
         self.threads    = []
         self.updaters   = []
-        self.db = self.parent.db
+        self.db = db
 
         self.tournaments = {}
         self.importTournaments()

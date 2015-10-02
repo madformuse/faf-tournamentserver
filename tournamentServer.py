@@ -56,20 +56,20 @@ class start(QObject):
         if not self.db.open():  
             self.logger.error(self.db.lastError().text())  
  
-        self.updater = self.setupTournamentServer()
+        self.updater = self.setupTournamentServer(self.db)
 
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11001):
             return        
         else:
             self.logger.info("starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
 
-    def setupTournamentServer(self):
+    def setupTournamentServer(self,db):
         from passwords import CHALLONGE_KEY, CHALLONGE_USER
         import challonge
 
         # Initialize API with credentials
         challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
-        updater = tournamentServer(self)
+        updater = tournamentServer(self,db)
         updater.startUpdateTimer()
 
         return updater
