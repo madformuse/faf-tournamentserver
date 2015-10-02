@@ -1,5 +1,8 @@
 import pytest
-from tournament import tournamentServer
 
-class TournamentServerTests:
-    pass
+from tournament.tournamentServer import *
+
+class TestTournamentServer:
+
+    def test_create(self):
+        assert tournamentServer(db=None)
