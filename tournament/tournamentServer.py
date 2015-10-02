@@ -40,10 +40,11 @@ class tournamentServer(QtNetwork.QTcpServer):
 
         self.tournaments = {}
         self.importTournaments()
-        
+
+    def startUpdateTimer(self):
         self.updateTimer = QtCore.QTimer()
         self.updateTimer.start(60000 * 5)
-        self.updateTimer.timeout.connect(self.importTournaments) 
+        self.updateTimer.timeout.connect(self.importTournaments)
         
     def importTournaments(self):
         self.tournaments = {}

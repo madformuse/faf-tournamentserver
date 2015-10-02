@@ -58,6 +58,8 @@ class start(QObject):
  
         
         self.updater =  tournamentServer(self)
+        self.updater.startUpdateTimer()
+
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11001):
             return        
         else:
