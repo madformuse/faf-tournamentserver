@@ -4,5 +4,13 @@ from tournament.tournamentServer import *
 
 class TestTournamentServer:
 
-    def test_create(self):
-        assert tournamentServer(db=None)
+    @pytest.fixture
+    def server(self):
+        return tournamentServer(db=None)
+
+    def test_create(self, server):
+        assert server
+
+
+
+
