@@ -22,12 +22,7 @@ from PySide import QtCore, QtNetwork
 from PySide.QtSql import *
 
 from . import tournamentServerThread
-from passwords import CHALLONGE_KEY, CHALLONGE_USER
 import challonge
-
-challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
-
-
 
 class tournamentServer(QtNetwork.QTcpServer):
     def __init__(self, parent=None):
