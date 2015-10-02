@@ -33,6 +33,11 @@ class tournamentServer(QtNetwork.QTcpServer):
 
         self.tournaments = {}
 
+    def start(self):
+        self.importTournaments()
+        self.startUpdateTimer()
+
+        return self
 
     def startUpdateTimer(self):
         self.updateTimer = QtCore.QTimer()

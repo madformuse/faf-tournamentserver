@@ -69,11 +69,8 @@ class start(QObject):
 
         # Initialize API with credentials
         challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
-        updater = tournamentServer(self,db)
-        updater.importTournaments()
-        updater.startUpdateTimer()
 
-        return updater
+        return tournamentServer(self,db).start()
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
