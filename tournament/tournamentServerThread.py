@@ -27,7 +27,6 @@ from PySide import QtCore, QtNetwork
 from PySide.QtSql import *
 
 import challonge
-from passwords import CHALLONGE_KEY, CHALLONGE_USER
 
 
 class tournamentServerThread(QObject):
@@ -42,8 +41,6 @@ class tournamentServerThread(QObject):
 
 
         self.app = None
-        
-        challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
         
         self.socket = QtNetwork.QTcpSocket(self)
         self.socket.setSocketDescriptor(socketId)
