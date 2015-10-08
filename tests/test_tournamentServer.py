@@ -13,10 +13,8 @@ class TestTournamentServer:
         assert server
 
     def test_no_tournaments(self,server):
-        # Index will return empty dict
-        challonge.tournaments.index = lambda: {}
-
-        server.importTournaments()
+        with patch('challonge.tournaments.index', side_affect={}) as fake_index:
+            server.importTournaments()
 
         assert server.tournaments == {}
 
