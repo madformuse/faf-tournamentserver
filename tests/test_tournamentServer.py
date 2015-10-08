@@ -44,7 +44,7 @@ class TestTournamentServer:
 
         self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
 
-        assert server.tournaments['1'] == faf_tournament
+        assert server.tournaments[self.CHALLONGE_TOURNAMENT['id']] == faf_tournament
 
     def test_started(self,server):
 
@@ -52,7 +52,7 @@ class TestTournamentServer:
 
         self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
 
-        assert server.tournaments['1']['state'] == 'started'
+        assert server.tournaments[self.CHALLONGE_TOURNAMENT['id']]['state'] == 'started'
 
     def test_finished(self,server):
 
@@ -60,7 +60,7 @@ class TestTournamentServer:
 
         self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
 
-        assert server.tournaments['1']['state'] == 'finished'
+        assert server.tournaments[self.CHALLONGE_TOURNAMENT['id']]['state'] == 'finished'
 
     def test_close_open_signups(self,server):
 
