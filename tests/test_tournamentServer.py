@@ -62,6 +62,15 @@ class TestTournamentServer:
 
         assert server.tournaments['1']['state'] == 'finished'
 
+    def test_close_open_signups(self,server):
+
+        self.CHALLONGE_TOURNAMENT['open_signup'] = "Not None"
+
+        with patch('challonge.tournaments.update') as updater:
+            self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
+
+            updater.assert_called_with(self.CHALLONGE_TOURNAMENT['id'],open_signup="false")
+
     def import_tournament(self,tournament,server):
 
         with patch('challonge.tournaments.index', return_value=[tournament]):
