@@ -4,6 +4,19 @@ from tournament.tournamentServer import *
 
 
 class TestTournamentServer:
+
+    CHALLONGE_TOURNAMENT = {
+            'id': '1',
+            'name': 'test',
+            'full-challonge-url': 'http://www.google.com',
+            'description': 'Amazing',
+            'tournament-type': 'dunno',
+            'progress-meter': '0',
+            'started-at': None,
+            'completed-at': None,
+            'open_signup': None
+        }
+
     @pytest.fixture
     def server(self):
         return tournamentServer(db=None)
@@ -18,30 +31,39 @@ class TestTournamentServer:
         assert server.tournaments == {}
 
     def test_tournament_mapping(self, server):
-        challonge_tournament = {
-            'id': '1',
-            'name': 'test',
-            'full-challonge-url': 'http://www.google.com',
-            'description': 'Amazing',
-            'tournament-type': 'dunno',
-            'progress-meter': '0',
-            'started-at': None,
-            'completed-at': None,
-            'open_signup': None
-        }
 
         faf_tournament = {
-            'name': challonge_tournament['name'],
-            'url': challonge_tournament['full-challonge-url'],
-            'description': challonge_tournament['description'],
-            'type': challonge_tournament['tournament-type'],
-            'progress': challonge_tournament['progress-meter'],
+            'name': self.CHALLONGE_TOURNAMENT['name'],
+            'url': self.CHALLONGE_TOURNAMENT['full-challonge-url'],
+            'description': self.CHALLONGE_TOURNAMENT['description'],
+            'type': self.CHALLONGE_TOURNAMENT['tournament-type'],
+            'progress': self.CHALLONGE_TOURNAMENT['progress-meter'],
             'state': 'open',
             'participants': []
         }
 
-        with patch('challonge.tournaments.index', return_value=[challonge_tournament]):
-            with patch('challonge.participants.index', return_value=[]):
-                server.importTournaments()
+        self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
 
         assert server.tournaments['1'] == faf_tournament
+
+    def test_started(self,server):
+
+        self.CHALLONGE_TOURNAMENT['started-at'] = "Not None"
+
+        self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
+
+        assert server.tournaments['1']['state'] == 'started'
+
+    def test_finished(self,server):
+
+        self.CHALLONGE_TOURNAMENT['completed-at'] = "Not None"
+
+        self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
+
+        assert server.tournaments['1']['state'] == 'finished'
+
+    def import_tournament(self,tournament,server):
+
+        with patch('challonge.tournaments.index', return_value=[tournament]):
+            with patch('challonge.participants.index', return_value=[]):
+                server.importTournaments()
