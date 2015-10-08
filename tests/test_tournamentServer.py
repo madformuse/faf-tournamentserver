@@ -13,7 +13,7 @@ class TestTournamentServer:
         assert server
 
     def test_no_tournaments(self,server):
-        with patch('challonge.tournaments.index', side_affect={}) as fake_index:
+        with patch('challonge.tournaments.index', return_value={}) as fake_index:
             server.importTournaments()
 
         assert server.tournaments == {}
