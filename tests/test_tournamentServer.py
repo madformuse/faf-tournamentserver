@@ -69,7 +69,7 @@ class TestTournamentServer:
         with patch('challonge.tournaments.update') as updater:
             self.import_tournament(self.CHALLONGE_TOURNAMENT,server)
 
-            updater.assert_called_with(self.CHALLONGE_TOURNAMENT['id'],open_signup="false")
+        updater.assert_called_with(self.CHALLONGE_TOURNAMENT['id'],open_signup="false")
 
     def import_tournament(self,tournament,server):
 
