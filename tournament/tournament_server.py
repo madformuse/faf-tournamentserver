@@ -79,12 +79,16 @@ class TournamentServer(QtNetwork.QTcpServer):
 
                         self.logger.debug("player %s was not found", p["name"])
 
-                        name = self.lookup_name_by_id(fafuid)
-                        self.logger.debug("player is replaced by %s", name)
-                        try:
-                            challonge.participants.update(uid, p["id"], name=str(name))
-                        except ChallongeException:
-                            pass
+                        name = ""
+                        if fafuid:
+                            name = self.lookup_name_by_id(fafuid)
+
+                        if name:
+                            self.logger.debug("player is replaced by %s", name)
+                            try:
+                                challonge.participants.update(uid, p["id"], name=str(name))
+                            except challonge.ChallongeException:
+                                pass
 
                     if fafuid:
                         if self.is_logged_in(fafuid):
@@ -109,7 +113,8 @@ class TournamentServer(QtNetwork.QTcpServer):
 
                         self.logger.debug("player %s was not found", name)
 
-                        name = self.lookup_name_by_id(fafuid)
+                        if fafuid is not None:
+                            name = self.lookup_name_by_id(fafuid)
 
                         if name:
                             self.logger.debug("player is replaced by %s", name)

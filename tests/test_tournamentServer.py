@@ -97,6 +97,18 @@ class TestTournamentServer:
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
+    def test_user_removed_if_missing(self, server, challonge_tournament):
+        # Set condition to invoke started checks
+        challonge_tournament['started-at'] = "Not None"
+        challonge_tournament['progress-meter'] = 0
+
+        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):
+            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=None):
+                with patch('challonge.participants.destroy') as destroy_participant:
+                    self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+
+        destroy_participant.assert_called_with(challonge_tournament['id'], 1)
+
     def test_name_updated(self, server, challonge_tournament):
         # Set conditions so extra checks are not performed
         challonge_tournament['started-at'] = None
