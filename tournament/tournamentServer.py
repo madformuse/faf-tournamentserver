@@ -66,7 +66,7 @@ class tournamentServer(QtNetwork.QTcpServer):
             if t["completed-at"] is not None:
                 self.tournaments[uid]["state"] = "finished"
 
-            if t["open_signup"]:
+            if t["open_signup"] is not None:
                 ToClose.append(uid)
 
             self.tournaments[uid]["participants"] = []
