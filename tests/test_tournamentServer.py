@@ -82,6 +82,24 @@ class TestTournamentServer:
 
         assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
 
+    def test_name_updated(self, server, challonge_tournament):
+        # Set conditions so extra checks are not performed
+        challonge_tournament['started-at'] = None
+
+        participant = {
+            'name': 'Tom',
+            'id': 1
+        }
+
+        # If FAF can't find 'Tom' it looks up the history to try and locate him. If found, challonge is updated.
+        with patch.object(tournamentServer, 'lookupIdFromLogin', return_value=None):  # Not found
+            with patch.object(tournamentServer, 'lookupIdFromHistory', return_value=2):  # Yay we used to know him!
+                with patch.object(tournamentServer, 'lookupNameById', return_value='Sally'):  # Each to their own
+                    with patch('challonge.participants.update') as update_participant:    # Should be called
+                        self.import_tournament(challonge_tournament, server, participant)
+
+        update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
+
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):
