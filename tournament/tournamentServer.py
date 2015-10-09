@@ -75,47 +75,28 @@ class tournamentServer(QtNetwork.QTcpServer):
                 changed = []
                 for p in challonge.participants.index(uid):
                     fafuid = None
-                    query = QSqlQuery(self.db)
-                    query.prepare("SELECT id FROM login WHERE login = ?")
-                    query.addBindValue(p["name"])
-                    if query.exec_():
-                        if query.size() == 1:
-                            query.first()
-                            fafuid = int(query.value(0))
+                    fafuid = self.lookupIdFromLogin(p["name"])
                     if fafuid is None:
-                        query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
-                        query.addBindValue(p["name"])
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                fafuid = int(query.value(0))
+                        fafuid = self.lookupIdFromHistory(p["name"])
 
                         self.logger.debug("player %s was not found", p["name"])
-                        query.prepare("SELECT login FROM login WHERE id =  ?")
-                        query.addBindValue(fafuid)
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                name = query.value(0)
-                                self.logger.debug("player is replaced by %s", name)
-                                try:
-                                    challonge.participants.update(uid, p["id"], name=str(name))
-                                except ChallongeException:
-                                    pass
+
+                        name = self.lookupNameById(fafuid)
+                        self.logger.debug("player is replaced by %s", name)
+                        try:
+                            challonge.participants.update(uid, p["id"], name=str(name))
+                        except ChallongeException:
+                            pass
 
                     if fafuid:
-                        query.prepare("SELECT session FROM login WHERE id = ?")
-                        query.addBindValue(fafuid)
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                if int(query.value(0)) == 0:
-                                    changed.append(p["id"])
-                                else:
-                                    participant = {}
-                                    participant["id"] = p["id"]
-                                    participant["name"] = p["name"]
-                                    self.tournaments[uid]["participants"].append(participant)
+                        if self.is_logged_in(fafuid):
+                            participant = {}
+                            participant["id"] = p["id"]
+                            participant["name"] = p["name"]
+                            self.tournaments[uid]["participants"].append(participant)
+                        else:
+                            changed.append(p["id"])
+
                     else:
                         changed.append(p["id"])
 
@@ -123,36 +104,22 @@ class tournamentServer(QtNetwork.QTcpServer):
                     for puid in changed:
                         challonge.participants.destroy(uid, puid)
 
-
             else:
                 for p in challonge.participants.index(uid):
                     fafuid = None
                     name = p["name"]
-                    query = QSqlQuery(self.db)
-                    query.prepare("SELECT id FROM login WHERE login = ?")
-                    query.addBindValue(p["name"])
-                    if query.exec_():
-                        if query.size() == 1:
-                            query.first()
-                            fafuid = int(query.value(0))
+                    fafuid = self.lookupIdFromLogin(p["name"])
 
                     if fafuid is None:
-                        query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
-                        query.addBindValue(p["name"])
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                fafuid = int(query.value(0))
+                        fafuid = self.lookupIdFromHistory(p["name"])
 
                         self.logger.debug("player %s was not found", name)
-                        query.prepare("SELECT login FROM login WHERE id = ?")
-                        query.addBindValue(fafuid)
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                name = query.value(0)
-                                self.logger.debug("player is replaced by %s", name)
-                                challonge.participants.update(uid, p["id"], name=str(name))
+
+                        name = self.lookupNameById(fafuid)
+
+                        if name:
+                            self.logger.debug("player is replaced by %s", name)
+                            challonge.participants.update(uid, p["id"], name=str(name))
 
                     participant = {
                         "id": p["id"],
@@ -168,6 +135,42 @@ class tournamentServer(QtNetwork.QTcpServer):
         if len(ToClose) != 0:
             for uid in ToClose:
                 challonge.tournaments.update(uid, open_signup="false")
+
+    def lookupIdFromLogin(self, name):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT id FROM login WHERE login = ?")
+        query.addBindValue(name)
+        if query.exec_():
+            if query.size() == 1:
+                query.first()
+                return int(query.value(0))
+
+    def lookupIdFromHistory(self, name):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
+        query.addBindValue(name)
+        if query.exec_():
+            if query.size() == 1:
+                query.first()
+                return int(query.value(0))
+
+    def lookupNameById(self, fafuid):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT login FROM login WHERE id =  ?")
+        query.addBindValue(fafuid)
+        if query.exec_():
+            if query.size() == 1:
+                query.first()
+                return query.value(0)
+
+    def is_logged_in(self, fafuid):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT session FROM login WHERE id = ?")
+        query.addBindValue(fafuid)
+        if query.exec_():
+            if query.size() == 1:
+                query.first()
+                return int(query.value(0)) != 0
 
     def incomingConnection(self, socketId):
 
