@@ -68,7 +68,21 @@ class TestTournamentServer:
 
         updater.assert_called_with(challonge_tournament['id'], open_signup="false")
 
-    def import_tournament(self, tournament, server):
-        with patch('challonge.tournaments.index', return_value=[tournament]):
-            with patch('challonge.participants.index', return_value=[]):
+    def test_participant_cached(self,server, challonge_tournament):
+        # Set conditions so extra checks are not performed
+        challonge_tournament['started-at'] = None
+
+        participant = {
+            'name': 'Tom',
+            'id': 1
+        }
+
+        with patch.object(tournamentServer, 'lookupIdFromLogin', return_value=5):
+            self.import_tournament(challonge_tournament, server, participant)
+
+        assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
+
+    def import_tournament(self, tournament, server, participants=None):
+        with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
+            with patch('challonge.participants.index', return_value=[participants] if participants else []):
                 server.importTournaments()
