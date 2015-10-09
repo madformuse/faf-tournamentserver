@@ -22,6 +22,7 @@ class TestTournamentServer:
             'completed-at': None,
             'open_signup': None
         }
+
     def test_create(self, server):
         assert server
 
@@ -68,9 +69,10 @@ class TestTournamentServer:
 
         updater.assert_called_with(challonge_tournament['id'], open_signup="false")
 
-    def test_participant_cached(self,server, challonge_tournament):
-        # Set conditions so extra checks are not performed
-        challonge_tournament['started-at'] = None
+    def test_participant_cached(self, server, challonge_tournament):
+        # Set conditions for most thorough checks
+        challonge_tournament['started-at'] = "Not None"
+        challonge_tournament['progress-meter'] = 0
 
         participant = {
             'name': 'Tom',
@@ -78,7 +80,8 @@ class TestTournamentServer:
         }
 
         with patch.object(TournamentServer, 'lookup_id_from_login', return_value=5):
-            self.import_tournament(challonge_tournament, server, participant)
+            with patch.object(TournamentServer, 'is_logged_in', return_value=True):
+                self.import_tournament(challonge_tournament, server, participant)
 
         assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
 
