@@ -21,33 +21,32 @@ import logging
 from PySide import QtCore, QtNetwork
 from PySide.QtSql import *
 
-from . import tournamentServerThread
+from . import tournament_server_thread
 import challonge
 
 
-class tournamentServer(QtNetwork.QTcpServer):
+class TournamentServer(QtNetwork.QTcpServer):
     def __init__(self, db):
         self.logger = logging.getLogger(__name__)
         self.threads = []
         self.updaters = []
         self.db = db
-
+        self.update_timer = QtCore.QTimer()
         self.tournaments = {}
 
     def start(self):
-        self.importTournaments()
-        self.startUpdateTimer()
+        self.import_tournaments()
+        self.start_update_timer()
 
         return self
 
-    def startUpdateTimer(self):
-        self.updateTimer = QtCore.QTimer()
-        self.updateTimer.start(60000 * 5)
-        self.updateTimer.timeout.connect(self.importTournaments)
+    def start_update_timer(self):
+        self.update_timer.start(60000 * 5)
+        self.update_timer.timeout.connect(self.import_tournaments)
 
-    def importTournaments(self):
+    def import_tournaments(self):
         self.tournaments = {}
-        ToClose = []
+        to_close = []
         for t in challonge.tournaments.index():
             uid = t["id"]
             self.tournaments[uid] = {}
@@ -57,31 +56,30 @@ class tournamentServer(QtNetwork.QTcpServer):
             self.tournaments[uid]["type"] = t["tournament-type"]
             self.tournaments[uid]["progress"] = t["progress-meter"]
             self.tournaments[uid]["state"] = "open"
-            checkParticipants = False
+            check_participants = False
 
             if t["started-at"] is not None:
                 self.tournaments[uid]["state"] = "started"
                 if t["progress-meter"] == 0:
-                    checkParticipants = True
+                    check_participants = True
             if t["completed-at"] is not None:
                 self.tournaments[uid]["state"] = "finished"
 
             if t["open_signup"] is not None:
-                ToClose.append(uid)
+                to_close.append(uid)
 
             self.tournaments[uid]["participants"] = []
 
-            if checkParticipants:
+            if check_participants:
                 changed = []
                 for p in challonge.participants.index(uid):
-                    fafuid = None
-                    fafuid = self.lookupIdFromLogin(p["name"])
+                    fafuid = self.lookup_id_from_login(p["name"])
                     if fafuid is None:
-                        fafuid = self.lookupIdFromHistory(p["name"])
+                        fafuid = self.lookup_id_from_history(p["name"])
 
                         self.logger.debug("player %s was not found", p["name"])
 
-                        name = self.lookupNameById(fafuid)
+                        name = self.lookup_name_by_id(fafuid)
                         self.logger.debug("player is replaced by %s", name)
                         try:
                             challonge.participants.update(uid, p["id"], name=str(name))
@@ -90,10 +88,7 @@ class tournamentServer(QtNetwork.QTcpServer):
 
                     if fafuid:
                         if self.is_logged_in(fafuid):
-                            participant = {}
-                            participant["id"] = p["id"]
-                            participant["name"] = p["name"]
-                            self.tournaments[uid]["participants"].append(participant)
+                            self.tournaments[uid]["participants"].append({"id": p["id"], "name": p["name"]})
                         else:
                             changed.append(p["id"])
 
@@ -106,37 +101,31 @@ class tournamentServer(QtNetwork.QTcpServer):
 
             else:
                 for p in challonge.participants.index(uid):
-                    fafuid = None
                     name = p["name"]
-                    fafuid = self.lookupIdFromLogin(p["name"])
+                    fafuid = self.lookup_id_from_login(p["name"])
 
                     if fafuid is None:
-                        fafuid = self.lookupIdFromHistory(p["name"])
+                        fafuid = self.lookup_id_from_history(p["name"])
 
                         self.logger.debug("player %s was not found", name)
 
-                        name = self.lookupNameById(fafuid)
+                        name = self.lookup_name_by_id(fafuid)
 
                         if name:
                             self.logger.debug("player is replaced by %s", name)
                             challonge.participants.update(uid, p["id"], name=str(name))
 
-                    participant = {
-                        "id": p["id"],
-                        "name": name
-                    }
-
-                    self.tournaments[uid]["participants"].append(participant)
+                    self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
 
                     # if self.tournaments[uid]["state"] == "started":
                     #     for conn in self.updaters:
                     #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
 
-        if len(ToClose) != 0:
-            for uid in ToClose:
+        if len(to_close) != 0:
+            for uid in to_close:
                 challonge.tournaments.update(uid, open_signup="false")
 
-    def lookupIdFromLogin(self, name):
+    def lookup_id_from_login(self, name):
         query = QSqlQuery(self.db)
         query.prepare("SELECT id FROM login WHERE login = ?")
         query.addBindValue(name)
@@ -145,7 +134,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                 query.first()
                 return int(query.value(0))
 
-    def lookupIdFromHistory(self, name):
+    def lookup_id_from_history(self, name):
         query = QSqlQuery(self.db)
         query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
         query.addBindValue(name)
@@ -154,7 +143,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                 query.first()
                 return int(query.value(0))
 
-    def lookupNameById(self, fafuid):
+    def lookup_name_by_id(self, fafuid):
         query = QSqlQuery(self.db)
         query.prepare("SELECT login FROM login WHERE id =  ?")
         query.addBindValue(fafuid)
@@ -172,13 +161,13 @@ class tournamentServer(QtNetwork.QTcpServer):
                 query.first()
                 return int(query.value(0)) != 0
 
-    def incomingConnection(self, socketId):
+    def incomingConnection(self, socket_id):
 
-        reload(tournamentServerThread)
+        reload(tournament_server_thread)
         # self.logger.debug("Incoming tourney Connection")
-        self.updaters.append(tournamentServerThread.tournamentServerThread(socketId, self))
+        self.updaters.append(tournament_server_thread.TournamentServerThread(socket_id, self))
 
-    def removeUpdater(self, updater):
+    def remove_updater(self, updater):
         if updater in self.updaters:
             self.updaters.remove(updater)
             updater.deleteLater()

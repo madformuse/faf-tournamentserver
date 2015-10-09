@@ -1,13 +1,13 @@
 import pytest
 from unittest.mock import patch
-from tournament.tournamentServer import *
+from tournament.tournament_server import *
 
 
 class TestTournamentServer:
 
     @pytest.fixture
     def server(self):
-        return tournamentServer(db=None)
+        return TournamentServer(db=None)
 
     @pytest.fixture
     def challonge_tournament(self):
@@ -27,7 +27,7 @@ class TestTournamentServer:
 
     def test_no_tournaments(self, server):
         with patch('challonge.tournaments.index', return_value={}) as fake_index:
-            server.importTournaments()
+            server.import_tournaments()
 
         assert server.tournaments == {}
 
@@ -53,7 +53,7 @@ class TestTournamentServer:
 
         assert server.tournaments[challonge_tournament['id']]['state'] == 'started'
 
-    def test_finished(self, server,challonge_tournament):
+    def test_finished(self, server, challonge_tournament):
         challonge_tournament['completed-at'] = "Not None"
 
         self.import_tournament(challonge_tournament, server)
@@ -77,7 +77,7 @@ class TestTournamentServer:
             'id': 1
         }
 
-        with patch.object(tournamentServer, 'lookupIdFromLogin', return_value=5):
+        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=5):
             self.import_tournament(challonge_tournament, server, participant)
 
         assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
@@ -92,9 +92,9 @@ class TestTournamentServer:
         }
 
         # If FAF can't find 'Tom' it looks up the history to try and locate him. If found, challonge is updated.
-        with patch.object(tournamentServer, 'lookupIdFromLogin', return_value=None):  # Not found
-            with patch.object(tournamentServer, 'lookupIdFromHistory', return_value=2):  # Yay we used to know him!
-                with patch.object(tournamentServer, 'lookupNameById', return_value='Sally'):  # Each to their own
+        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):  # Not found
+            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=2):  # Yay we used to know him!
+                with patch.object(TournamentServer, 'lookup_name_by_id', return_value='Sally'):  # Each to their own
                     with patch('challonge.participants.update') as update_participant:    # Should be called
                         self.import_tournament(challonge_tournament, server, participant)
 
@@ -103,4 +103,4 @@ class TestTournamentServer:
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):
-                server.importTournaments()
+                server.import_tournaments()
