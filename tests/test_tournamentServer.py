@@ -125,7 +125,9 @@ class TestTournamentServer:
                     with patch('challonge.participants.update') as update_participant:    # Should be called
                         self.import_tournament(challonge_tournament, server, participant)
 
+        # Make sure name updated on Challonge and current name is cached.
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
+        assert server.tournaments[challonge_tournament['id']]['participants'][0]['name'] == 'Sally'
 
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
