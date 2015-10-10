@@ -71,7 +71,6 @@ class TournamentServer(QtNetwork.QTcpServer):
             self.tournaments[uid]["participants"] = []
 
             if check_participants:
-                changed = []
                 for p in challonge.participants.index(uid):
                     fafuid = self.lookup_id_from_login(p["name"])
                     if fafuid is None:
@@ -94,14 +93,10 @@ class TournamentServer(QtNetwork.QTcpServer):
                         if self.is_logged_in(fafuid):
                             self.tournaments[uid]["participants"].append({"id": p["id"], "name": p["name"]})
                         else:
-                            changed.append(p["id"])
+                            challonge.participants.destroy(uid, p["id"])
 
                     else:
-                        changed.append(p["id"])
-
-                if len(changed) != 0:
-                    for puid in changed:
-                        challonge.participants.destroy(uid, puid)
+                        challonge.participants.destroy(uid, p["id"])
 
             else:
                 for p in challonge.participants.index(uid):
