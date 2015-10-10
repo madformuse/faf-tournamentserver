@@ -85,7 +85,7 @@ class TestTournamentServer:
 
         assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
 
-    def test_user_removed_when_absent(self,server,challonge_tournament):
+    def test_user_removed_when_absent(self, server, challonge_tournament):
         # Set condition to invoke started checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
@@ -96,6 +96,20 @@ class TestTournamentServer:
                     self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
+
+    def test_not_removed_unless_started(self, server, challonge_tournament):
+
+        # This is strange (but current) behaviour. Even if no record of user is found they remain
+        # in the tournament until it starts
+
+        # Set condition so state is not started
+        challonge_tournament['started-at'] = None
+
+        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):
+            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=None):
+                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+
+        assert server.tournaments[challonge_tournament['id']]['participants'][0]['name'] == 'Tom'
 
     def test_user_removed_if_missing(self, server, challonge_tournament):
         # Set condition to invoke started checks
