@@ -46,7 +46,6 @@ class TournamentServer(QtNetwork.QTcpServer):
 
     def import_tournaments(self):
         self.tournaments = {}
-        to_close = []
         for t in challonge.tournaments.index():
             uid = t["id"]
             self.tournaments[uid] = {}
@@ -66,7 +65,7 @@ class TournamentServer(QtNetwork.QTcpServer):
                 self.tournaments[uid]["state"] = "finished"
 
             if t["open_signup"] is not None:
-                to_close.append(uid)
+                challonge.tournaments.update(uid, open_signup="false")
 
             self.tournaments[uid]["participants"] = []
 
@@ -120,10 +119,6 @@ class TournamentServer(QtNetwork.QTcpServer):
                     # if self.tournaments[uid]["state"] == "started":
                     #     for conn in self.updaters:
                     #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
-
-        if len(to_close) != 0:
-            for uid in to_close:
-                challonge.tournaments.update(uid, open_signup="false")
 
     def lookup_id_from_login(self, name):
         query = QSqlQuery(self.db)
