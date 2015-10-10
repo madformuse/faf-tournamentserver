@@ -106,7 +106,7 @@ class TournamentServer(QtNetwork.QTcpServer):
                         if fafuid is not None:
                             name = self.lookup_name_by_id(fafuid)
 
-                        if name:
+                        if fafuid:
                             self.logger.debug("player is replaced by %s", name)
                             challonge.participants.update(uid, p["id"], name=str(name))
 
