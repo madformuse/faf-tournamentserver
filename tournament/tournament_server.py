@@ -88,12 +88,8 @@ class TournamentServer(QtNetwork.QTcpServer):
                             except challonge.ChallongeException:
                                 pass
 
-                    if fafuid:
-                        if self.is_logged_in(fafuid):
-                            self.tournaments[uid]["participants"].append({"id": p["id"], "name": p["name"]})
-                        else:
-                            challonge.participants.destroy(uid, p["id"])
-
+                    if fafuid and self.is_logged_in(fafuid):
+                        self.tournaments[uid]["participants"].append({"id": p["id"], "name": p["name"]})
                     else:
                         challonge.participants.destroy(uid, p["id"])
 
