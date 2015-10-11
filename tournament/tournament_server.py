@@ -72,28 +72,25 @@ class TournamentServer(QtNetwork.QTcpServer):
 
             for p in challonge.participants.index(uid):
                 name = p["name"]
-                fafuid = self.lookup_id_from_login(p["name"])
-                if fafuid is None:
-                    fafuid = self.lookup_id_from_history(p["name"])
+                found = self.lookup_id_from_login(p["name"])
+                if found is None:
+                    found = self.lookup_id_from_history(p["name"])
 
                     self.logger.debug("player %s was not found", name)
 
-                    if fafuid:
-                        name = self.lookup_name_by_id(fafuid)
+                    if found:
+                        name = self.lookup_name_by_id(found)
                         self.logger.debug("player is replaced by %s", name)
                         challonge.participants.update(uid, p["id"], name=str(name))
 
-                if check_participants:
-                    if fafuid and self.is_logged_in(fafuid):
-                        self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
-                    else:
-                        challonge.participants.destroy(uid, p["id"])
+                if check_participants and (not found or not self.is_logged_in(found)):
+                    challonge.participants.destroy(uid, p["id"])
                 else:
                     self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
 
-                    # if self.tournaments[uid]["state"] == "started":
-                    #     for conn in self.updaters:
-                    #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
+                # if self.tournaments[uid]["state"] == "started":
+                #     for conn in self.updaters:
+                #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
 
     def in_tournament(self, name, tournament_id):
         return any(p['name'] == name for p in self.tournaments[tournament_id]['participants'])
