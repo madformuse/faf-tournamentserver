@@ -78,14 +78,10 @@ class TournamentServerThread(QObject):
         uid = message["uid"]
         login = message["login"]
 
-        participants = self.parent.tournaments[uid]["participants"]
-        for p in participants:
-            if p["name"] == login:
-                challonge.participants.destroy(uid, p["id"])
-        self.parent.import_tournaments()
+        self.parent.remove_participant(login, uid)
         self.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments))
         # for conn in self.parent.updaters:
-        #     conn.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments))        
+        #     conn.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments))
 
     def command_get_tournaments(self, message):
         self.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments))

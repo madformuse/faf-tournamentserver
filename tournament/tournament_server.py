@@ -170,6 +170,14 @@ class TournamentServer(QtNetwork.QTcpServer):
         self.log.debug("player added, reloading data")
         self.import_tournaments()
 
+    def remove_participant(self, login, uid):
+        participants = self.tournaments[uid]["participants"]
+        for p in participants:
+            if p["name"] == login:
+                challonge.participants.destroy(uid, p["id"])
+
+        self.import_tournaments()
+
     def incomingConnection(self, socket_id):
 
         reload(tournament_server_thread)
