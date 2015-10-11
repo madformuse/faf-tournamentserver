@@ -71,22 +71,19 @@ class TournamentServer(QtNetwork.QTcpServer):
             self.tournaments[uid]["participants"] = []
 
             for p in challonge.participants.index(uid):
-                name = p["name"]
-                found = self.lookup_id_from_login(p["name"])
-                if not found:
-                    found = self.lookup_id_from_history(p["name"])
+                found = self.lookup_user(p["name"])
 
-                    self.logger.debug("player %s was not found", name)
-
-                    if found:
-                        name = self.lookup_name_by_id(found)
-                        self.logger.debug("player is replaced by %s", name)
-                        challonge.participants.update(uid, p["id"], name=str(name))
-
-                if check_participants and not (found and self.is_logged_in(found)):
+                if check_participants and not (found and found['logged_in']):
                     challonge.participants.destroy(uid, p["id"])
                 else:
-                    self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
+                    if found and found['renamed']:
+                        self.logger.debug("player is replaced by %s", found['name'])
+                        challonge.participants.update(uid, p["id"], name=found['name'])
+
+                    self.tournaments[uid]["participants"].append({
+                        "id": p["id"],
+                        "name": found['name'] if found else p['name']
+                    })
 
                 # if self.tournaments[uid]["state"] == "started":
                 #     for conn in self.updaters:
@@ -94,6 +91,25 @@ class TournamentServer(QtNetwork.QTcpServer):
 
     def in_tournament(self, name, tournament_id):
         return any(p['name'] == name for p in self.tournaments[tournament_id]['participants'])
+
+    def lookup_user(self, name):
+        fafuid = self.lookup_id_from_login(name)
+        real_name = name
+
+        if not fafuid:
+            fafuid = self.lookup_id_from_history(name)
+
+            if not fafuid:
+                return None
+
+            real_name = self.lookup_name_by_id(fafuid)
+
+        return {
+            'name': str(real_name),
+            'id': fafuid,
+            'logged_in': self.is_logged_in(fafuid),
+            'renamed': real_name != name
+        }
 
     def lookup_id_from_login(self, name):
         query = QSqlQuery(self.db)
@@ -130,6 +146,7 @@ class TournamentServer(QtNetwork.QTcpServer):
             if query.size() == 1:
                 query.first()
                 return int(query.value(0)) != 0
+        return False
 
     def incomingConnection(self, socket_id):
 
