@@ -83,7 +83,7 @@ class TestTournamentServer:
             with patch.object(TournamentServer, 'is_logged_in', return_value=True):
                 self.import_tournament(challonge_tournament, server, participant)
 
-        assert server.tournaments[challonge_tournament['id']]['participants'][0] == {'name': 'Tom', 'id': 1}
+        assert self.in_tournament('Tom', challonge_tournament['id'], server)
 
     def test_user_removed_when_absent(self, server, challonge_tournament):
         # Set condition to invoke started checks
@@ -109,7 +109,7 @@ class TestTournamentServer:
             with patch.object(TournamentServer, 'lookup_id_from_history', return_value=None):
                 self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
-        assert server.tournaments[challonge_tournament['id']]['participants'][0]['name'] == 'Tom'
+        assert self.in_tournament('Tom', challonge_tournament['id'], server)
 
     def test_user_removed_if_missing(self, server, challonge_tournament):
         # Set condition to invoke started checks
@@ -141,9 +141,12 @@ class TestTournamentServer:
 
         # Make sure name updated on Challonge and current name is cached.
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
-        assert server.tournaments[challonge_tournament['id']]['participants'][0]['name'] == 'Sally'
+        assert self.in_tournament('Sally', challonge_tournament['id'], server)
 
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):
                 server.import_tournaments()
+
+    def in_tournament(self, name, tournament_id, server):
+        return server.tournaments[tournament_id]['participants'][0]['name'] == name
