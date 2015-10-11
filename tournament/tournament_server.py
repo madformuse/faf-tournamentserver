@@ -69,47 +69,25 @@ class TournamentServer(QtNetwork.QTcpServer):
 
             self.tournaments[uid]["participants"] = []
 
-            if check_participants:
-                for p in challonge.participants.index(uid):
-                    fafuid = self.lookup_id_from_login(p["name"])
-                    if fafuid is None:
-                        fafuid = self.lookup_id_from_history(p["name"])
+            for p in challonge.participants.index(uid):
+                name = p["name"]
+                fafuid = self.lookup_id_from_login(p["name"])
+                if fafuid is None:
+                    fafuid = self.lookup_id_from_history(p["name"])
 
-                        self.logger.debug("player %s was not found", p["name"])
+                    self.logger.debug("player %s was not found", name)
 
-                        name = ""
-                        if fafuid:
-                            name = self.lookup_name_by_id(fafuid)
+                    if fafuid:
+                        name = self.lookup_name_by_id(fafuid)
+                        self.logger.debug("player is replaced by %s", name)
+                        challonge.participants.update(uid, p["id"], name=str(name))
 
-                        if name:
-                            self.logger.debug("player is replaced by %s", name)
-                            try:
-                                challonge.participants.update(uid, p["id"], name=str(name))
-                            except challonge.ChallongeException:
-                                pass
-
+                if check_participants:
                     if fafuid and self.is_logged_in(fafuid):
-                        self.tournaments[uid]["participants"].append({"id": p["id"], "name": p["name"]})
+                        self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
                     else:
                         challonge.participants.destroy(uid, p["id"])
-
-            else:
-                for p in challonge.participants.index(uid):
-                    name = p["name"]
-                    fafuid = self.lookup_id_from_login(p["name"])
-
-                    if fafuid is None:
-                        fafuid = self.lookup_id_from_history(p["name"])
-
-                        self.logger.debug("player %s was not found", name)
-
-                        if fafuid is not None:
-                            name = self.lookup_name_by_id(fafuid)
-
-                        if fafuid:
-                            self.logger.debug("player is replaced by %s", name)
-                            challonge.participants.update(uid, p["id"], name=str(name))
-
+                else:
                     self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
 
                     # if self.tournaments[uid]["state"] == "started":
