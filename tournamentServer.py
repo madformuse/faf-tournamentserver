@@ -26,7 +26,7 @@ from PySide.QtCore import QObject
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from config import Config
 from tournament.tournament_server import *
-
+from tournament.user_service import UserService
 
 UNIT16 = 8
 
@@ -70,7 +70,7 @@ class start(QObject):
         # Initialize API with credentials
         challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
 
-        return TournamentServer(self,db).start()
+        return TournamentServer(self, UserService(db)).start()
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
