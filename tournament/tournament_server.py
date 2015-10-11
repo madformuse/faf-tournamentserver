@@ -83,7 +83,7 @@ class TournamentServer(QtNetwork.QTcpServer):
                         self.logger.debug("player is replaced by %s", name)
                         challonge.participants.update(uid, p["id"], name=str(name))
 
-                if check_participants and (not found or not self.is_logged_in(found)):
+                if check_participants and not (found and self.is_logged_in(found)):
                     challonge.participants.destroy(uid, p["id"])
                 else:
                     self.tournaments[uid]["participants"].append({"id": p["id"], "name": name})
