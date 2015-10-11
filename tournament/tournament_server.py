@@ -73,7 +73,7 @@ class TournamentServer(QtNetwork.QTcpServer):
             for p in challonge.participants.index(uid):
                 name = p["name"]
                 found = self.lookup_id_from_login(p["name"])
-                if found is None:
+                if not found:
                     found = self.lookup_id_from_history(p["name"])
 
                     self.logger.debug("player %s was not found", name)
