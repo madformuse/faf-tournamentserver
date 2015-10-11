@@ -69,30 +69,7 @@ class TournamentServerThread(QObject):
         uid = message["uid"]
         login = message["login"]
 
-        challonge.participants.create(uid, login)
-
-        participants = challonge.participants.index(uid)
-        query = QSqlQuery(self.parent.db)
-        seeding = {}
-        for p in participants:
-            query.prepare(
-                "SELECT (mean-3*deviation) FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
-            query.addBindValue(p["name"])
-            rating = 0
-            if query.exec_():
-                if query.size() == 1:
-                    query.first()
-                    rating = float(query.value(0))
-
-            seeding[p["id"]] = rating
-
-        sortedSeed = sorted(iter(seeding.items()), key=operator.itemgetter(1), reverse=True)
-
-        for i in range(len(sortedSeed)):
-            challonge.participants.update(uid, sortedSeed[i][0], seed=str(i + 1))
-
-        self.log.debug("player added, reloading data")
-        self.parent.import_tournaments()
+        self.parent.add_participant(login, uid)
 
         self.log.debug("sending ata")
         self.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments))
