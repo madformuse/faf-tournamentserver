@@ -48,13 +48,14 @@ class TournamentServer(QtNetwork.QTcpServer):
         self.tournaments = {}
         for t in challonge.tournaments.index():
             uid = t["id"]
-            self.tournaments[uid] = {}
-            self.tournaments[uid]["name"] = t["name"]
-            self.tournaments[uid]["url"] = t["full-challonge-url"]
-            self.tournaments[uid]["description"] = t["description"]
-            self.tournaments[uid]["type"] = t["tournament-type"]
-            self.tournaments[uid]["progress"] = t["progress-meter"]
-            self.tournaments[uid]["state"] = "open"
+            self.tournaments[uid] = {
+                "name": t["name"],
+                "url": t["full-challonge-url"],
+                "description": t["description"],
+                "type": t["tournament-type"],
+                "progress": t["progress-meter"],
+                "state": "open"
+            }
             check_participants = False
 
             if t["started-at"] is not None:
