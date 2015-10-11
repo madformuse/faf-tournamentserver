@@ -116,6 +116,9 @@ class TournamentServer(QtNetwork.QTcpServer):
                     #     for conn in self.updaters:
                     #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
 
+    def in_tournament(self, name, tournament_id):
+        return any(p['name'] == name for p in self.tournaments[tournament_id]['participants'])
+
     def lookup_id_from_login(self, name):
         query = QSqlQuery(self.db)
         query.prepare("SELECT id FROM login WHERE login = ?")
