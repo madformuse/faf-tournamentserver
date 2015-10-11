@@ -1,13 +1,20 @@
 import pytest
 from unittest.mock import patch
+from unittest import mock
 from tournament.tournament_server import *
-
+from tournament.user_service import UserService
 
 class TestTournamentServer:
 
     @pytest.fixture
-    def server(self):
-        return TournamentServer(db=None)
+    def user_service(self):
+        m = mock.create_autospec(UserService)
+
+        return m
+
+    @pytest.fixture
+    def server(self, user_service):
+        return TournamentServer(user_service=user_service)
 
     @pytest.fixture
     def challonge_tournament(self):
@@ -73,60 +80,59 @@ class TestTournamentServer:
 
         updater.assert_called_with(challonge_tournament['id'], open_signup="false")
 
-    def test_participant_cached(self, server, challonge_tournament, user):
+    def test_participant_cached(self, server, challonge_tournament, user, user_service):
         # Set conditions for most thorough checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
-
         participant = {
             'name': 'Tom',
             'id': 1
         }
+        user.update(name='Tom', logged_in=True)
+        user_service.lookup_user.return_value = user
 
-        with patch.object(TournamentServer, 'lookup_user', return_value=user):
-                self.import_tournament(challonge_tournament, server, participant)
+        self.import_tournament(challonge_tournament, server, participant)
 
         assert server.in_tournament('Tom', challonge_tournament['id'])
 
-    def test_user_removed_when_absent(self, server, challonge_tournament, user):
+    def test_user_removed_when_absent(self, server, challonge_tournament, user, user_service):
         # Set condition to invoke started checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
-
         # User not logged in
         user.update(logged_in=False)
+        user_service.lookup_user.return_value = user
 
-        with patch.object(TournamentServer, 'lookup_user', return_value=user):
-            with patch('challonge.participants.destroy') as destroy_participant:
-                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        with patch('challonge.participants.destroy') as destroy_participant:
+            self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
-    def test_not_removed_unless_started(self, server, challonge_tournament):
+    def test_not_removed_unless_started(self, server, challonge_tournament, user_service):
 
         # This is strange (but current) behaviour. Even if no record of user is found they remain
         # in the tournament until it starts
 
         # Set condition so state is not started
         challonge_tournament['started-at'] = None
+        user_service.lookup_user.return_value = None
 
-        with patch.object(TournamentServer, 'lookup_user', return_value=None):
-            self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         assert server.in_tournament('Tom', challonge_tournament['id'])
 
-    def test_user_removed_if_missing(self, server, challonge_tournament):
+    def test_user_removed_if_missing(self, server, challonge_tournament, user_service):
         # Set condition to invoke started checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
+        user_service.lookup_user.return_value = None
 
-        with patch.object(TournamentServer, 'lookup_user', return_value=None):
-            with patch('challonge.participants.destroy') as destroy_participant:
-                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        with patch('challonge.participants.destroy') as destroy_participant:
+            self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
-    def test_name_updated(self, server, challonge_tournament, user):
+    def test_name_updated(self, server, challonge_tournament, user, user_service):
         # Set conditions so extra checks are not performed
         challonge_tournament['started-at'] = None
 
@@ -137,9 +143,10 @@ class TestTournamentServer:
 
         user.update(name='Sally', renamed=True)
 
-        with patch.object(TournamentServer, 'lookup_user', return_value=user):
-            with patch('challonge.participants.update') as update_participant:
-                self.import_tournament(challonge_tournament, server, participant)
+        user_service.lookup_user.return_value = user
+
+        with patch('challonge.participants.update') as update_participant:
+            self.import_tournament(challonge_tournament, server, participant)
 
         # Make sure name updated on Challonge and current name is cached.
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
