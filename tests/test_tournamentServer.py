@@ -23,6 +23,10 @@ class TestTournamentServer:
             'open_signup': None
         }
 
+    @pytest.fixture
+    def user(self):
+        return {'id': 2, 'name': 'Tom', 'logged_in': True, 'renamed': False}
+
     def test_create(self, server):
         assert server
 
@@ -69,7 +73,7 @@ class TestTournamentServer:
 
         updater.assert_called_with(challonge_tournament['id'], open_signup="false")
 
-    def test_participant_cached(self, server, challonge_tournament):
+    def test_participant_cached(self, server, challonge_tournament, user):
         # Set conditions for most thorough checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
@@ -79,21 +83,22 @@ class TestTournamentServer:
             'id': 1
         }
 
-        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=5):
-            with patch.object(TournamentServer, 'is_logged_in', return_value=True):
+        with patch.object(TournamentServer, 'lookup_user', return_value=user):
                 self.import_tournament(challonge_tournament, server, participant)
 
         assert server.in_tournament('Tom', challonge_tournament['id'])
 
-    def test_user_removed_when_absent(self, server, challonge_tournament):
+    def test_user_removed_when_absent(self, server, challonge_tournament, user):
         # Set condition to invoke started checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
 
-        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=5):
-            with patch.object(TournamentServer, 'is_logged_in', return_value=False):
-                with patch('challonge.participants.destroy') as destroy_participant:
-                    self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        # User not logged in
+        user.update(logged_in=False)
+
+        with patch.object(TournamentServer, 'lookup_user', return_value=user):
+            with patch('challonge.participants.destroy') as destroy_participant:
+                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
@@ -105,9 +110,8 @@ class TestTournamentServer:
         # Set condition so state is not started
         challonge_tournament['started-at'] = None
 
-        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):
-            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=None):
-                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        with patch.object(TournamentServer, 'lookup_user', return_value=None):
+            self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         assert server.in_tournament('Tom', challonge_tournament['id'])
 
@@ -116,14 +120,13 @@ class TestTournamentServer:
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
 
-        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):
-            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=None):
-                with patch('challonge.participants.destroy') as destroy_participant:
-                    self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
+        with patch.object(TournamentServer, 'lookup_user', return_value=None):
+            with patch('challonge.participants.destroy') as destroy_participant:
+                self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
-    def test_name_updated(self, server, challonge_tournament):
+    def test_name_updated(self, server, challonge_tournament, user):
         # Set conditions so extra checks are not performed
         challonge_tournament['started-at'] = None
 
@@ -132,12 +135,11 @@ class TestTournamentServer:
             'id': 1
         }
 
-        # If FAF can't find 'Tom' it looks up the history to try and locate him. If found, challonge is updated.
-        with patch.object(TournamentServer, 'lookup_id_from_login', return_value=None):  # Not found
-            with patch.object(TournamentServer, 'lookup_id_from_history', return_value=2):  # Yay we used to know him!
-                with patch.object(TournamentServer, 'lookup_name_by_id', return_value='Sally'):  # Each to their own
-                    with patch('challonge.participants.update') as update_participant:    # Should be called
-                        self.import_tournament(challonge_tournament, server, participant)
+        user.update(name='Sally', renamed=True)
+
+        with patch.object(TournamentServer, 'lookup_user', return_value=user):
+            with patch('challonge.participants.update') as update_participant:
+                self.import_tournament(challonge_tournament, server, participant)
 
         # Make sure name updated on Challonge and current name is cached.
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
