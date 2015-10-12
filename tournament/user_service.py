@@ -23,7 +23,8 @@ class UserService:
             'name': str(real_name),
             'id': fafuid,
             'logged_in': self.is_logged_in(fafuid),
-            'renamed': real_name != name
+            'renamed': real_name != name,
+            'rating': self.lookup_rating(real_name)
         }
 
     def lookup_id_from_login(self, name):
@@ -62,3 +63,14 @@ class UserService:
                 query.first()
                 return int(query.value(0)) != 0
         return False
+
+    def lookup_rating(self, fafuid):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT (mean-3*deviation) FROM global_rating WHERE id = ?")
+        query.addBindValue(fafuid)
+        rating = 0
+        if query.exec_() and query.size() == 1:
+            query.first()
+            rating = float(query.value(0))
+
+        return rating
