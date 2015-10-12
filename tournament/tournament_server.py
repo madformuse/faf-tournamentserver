@@ -95,7 +95,6 @@ class TournamentServer(QtNetwork.QTcpServer):
     def add_participant(self, login, uid):
         challonge.participants.create(uid, login)
         participants = challonge.participants.index(uid)
-        query = QSqlQuery(self.users)
         seeding = {}
         for p in participants:
             user = self.users.lookup_user(p['name'])
