@@ -152,6 +152,22 @@ class TestTournamentServer:
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
         assert server.in_tournament('Sally', challonge_tournament['id'])
 
+    def test_user_removed(self, challonge_tournament, server, user, user_service):
+        participant = {
+            'name': 'Tom',
+            'id': 3
+        }
+
+        user.update(name='Tom')
+        user_service.lookup_user.return_value = user
+        self.import_tournament(challonge_tournament, server, participant)
+        assert server.in_tournament(participant['name'], challonge_tournament['id'])
+
+        with patch('challonge.participants.destroy') as destroy:
+            server.remove_participant(participant['name'], challonge_tournament['id'])
+
+        destroy.assert_called_with(challonge_tournament['id'], participant['id'])
+
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):

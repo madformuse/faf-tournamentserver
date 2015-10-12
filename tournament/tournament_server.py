@@ -111,8 +111,8 @@ class TournamentServer(QtNetwork.QTcpServer):
         for p in participants:
             if p["name"] == login:
                 challonge.participants.destroy(uid, p["id"])
-
-        self.import_tournaments()
+                self.tournaments[uid]["participants"].remove(p)
+                break
 
     def incomingConnection(self, socket_id):
 
