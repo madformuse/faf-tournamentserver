@@ -85,10 +85,6 @@ class TournamentServer(QtNetwork.QTcpServer):
                         "name": found['name'] if found else p['name']
                     })
 
-                # if self.tournaments[uid]["state"] == "started":
-                #     for conn in self.updaters:
-                #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
-
     def in_tournament(self, name, tournament_id):
         return any(p['name'] == name for p in self.tournaments[tournament_id]['participants'])
 
