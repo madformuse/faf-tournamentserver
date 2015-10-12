@@ -31,8 +31,12 @@ class TestTournamentServer:
         }
 
     @pytest.fixture
-    def user(self):
-        return {'id': 2, 'name': 'Tom', 'logged_in': True, 'renamed': False}
+    def user(self, user_service):
+        test_user = {'id': 2, 'name': 'Tom', 'logged_in': True, 'renamed': False}
+
+        user_service.lookup_user.return_value = test_user
+
+        return test_user
 
     def test_create(self, server):
         assert server
@@ -80,7 +84,7 @@ class TestTournamentServer:
 
         updater.assert_called_with(challonge_tournament['id'], open_signup="false")
 
-    def test_participant_cached(self, server, challonge_tournament, user, user_service):
+    def test_participant_cached(self, server, challonge_tournament, user):
         # Set conditions for most thorough checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
@@ -89,19 +93,17 @@ class TestTournamentServer:
             'id': 1
         }
         user.update(name='Tom', logged_in=True)
-        user_service.lookup_user.return_value = user
 
         self.import_tournament(challonge_tournament, server, participant)
 
         assert server.in_tournament('Tom', challonge_tournament['id'])
 
-    def test_user_removed_when_absent(self, server, challonge_tournament, user, user_service):
+    def test_user_removed_when_absent(self, server, challonge_tournament, user):
         # Set condition to invoke started checks
         challonge_tournament['started-at'] = "Not None"
         challonge_tournament['progress-meter'] = 0
         # User not logged in
         user.update(logged_in=False)
-        user_service.lookup_user.return_value = user
 
         with patch('challonge.participants.destroy') as destroy_participant:
             self.import_tournament(challonge_tournament, server, {'name': 'Tom', 'id': 1})
@@ -132,7 +134,7 @@ class TestTournamentServer:
 
         destroy_participant.assert_called_with(challonge_tournament['id'], 1)
 
-    def test_name_updated(self, server, challonge_tournament, user, user_service):
+    def test_name_updated(self, server, challonge_tournament, user):
         # Set conditions so extra checks are not performed
         challonge_tournament['started-at'] = None
 
@@ -143,8 +145,6 @@ class TestTournamentServer:
 
         user.update(name='Sally', renamed=True)
 
-        user_service.lookup_user.return_value = user
-
         with patch('challonge.participants.update') as update_participant:
             self.import_tournament(challonge_tournament, server, participant)
 
@@ -152,14 +152,13 @@ class TestTournamentServer:
         update_participant.assert_called_with(challonge_tournament['id'], participant['id'], name='Sally')
         assert server.in_tournament('Sally', challonge_tournament['id'])
 
-    def test_user_removed(self, challonge_tournament, server, user, user_service):
+    def test_user_removed(self, challonge_tournament, server, user):
         participant = {
             'name': 'Tom',
             'id': 3
         }
 
         user.update(name='Tom')
-        user_service.lookup_user.return_value = user
         self.import_tournament(challonge_tournament, server, participant)
         assert server.in_tournament(participant['name'], challonge_tournament['id'])
 
