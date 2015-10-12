@@ -90,6 +90,13 @@ class TournamentServer(QtNetwork.QTcpServer):
 
     def add_participant(self, login, uid):
         challonge.participants.create(uid, login)
+
+        self.seed_participants(uid)
+
+        self.log.debug("player added, reloading data")
+        self.import_tournaments()
+
+    def seed_participants(self, uid):
         participants = challonge.participants.index(uid)
         seeding = {}
         for p in participants:
@@ -99,8 +106,6 @@ class TournamentServer(QtNetwork.QTcpServer):
         sortedSeed = sorted(iter(seeding.items()), key=operator.itemgetter(1), reverse=True)
         for i in range(len(sortedSeed)):
             challonge.participants.update(uid, sortedSeed[i][0], seed=str(i + 1))
-        self.log.debug("player added, reloading data")
-        self.import_tournaments()
 
     def remove_participant(self, login, uid):
         participants = self.tournaments[uid]["participants"]
