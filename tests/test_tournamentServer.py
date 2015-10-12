@@ -166,6 +166,7 @@ class TestTournamentServer:
             server.remove_participant(participant['name'], challonge_tournament['id'])
 
         destroy.assert_called_with(challonge_tournament['id'], participant['id'])
+        assert not server.in_tournament(participant['name'], challonge_tournament['id'])
 
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
