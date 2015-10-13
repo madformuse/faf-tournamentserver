@@ -48,22 +48,8 @@ class TournamentServer(QtNetwork.QTcpServer):
         self.tournaments = {}
         for t in challonge.tournaments.index():
             uid = t["id"]
-            self.tournaments[uid] = {
-                "name": t["name"],
-                "url": t["full-challonge-url"],
-                "description": t["description"],
-                "type": t["tournament-type"],
-                "progress": t["progress-meter"],
-                "state": "open"
-            }
-            check_participants = False
-
-            if t["started-at"] is not None:
-                self.tournaments[uid]["state"] = "started"
-                if t["progress-meter"] == 0:
-                    check_participants = True
-            if t["completed-at"] is not None:
-                self.tournaments[uid]["state"] = "finished"
+            self.tournaments[uid] = self._create_tournament(t)
+            check_participants = self.tournaments[uid]['state'] == 'started' and t['progress-meter'] == 0
 
             if t["open_signup"] is not None:
                 challonge.tournaments.update(uid, open_signup="false")
@@ -84,6 +70,23 @@ class TournamentServer(QtNetwork.QTcpServer):
                         "id": p["id"],
                         "name": found['name'] if found else p['name']
                     })
+
+    def _create_tournament(self,challonge_tournament):
+        converted = {
+                "name": challonge_tournament["name"],
+                "url": challonge_tournament["full-challonge-url"],
+                "description": challonge_tournament["description"],
+                "type": challonge_tournament["tournament-type"],
+                "progress": challonge_tournament["progress-meter"],
+                "state": "open"
+        }
+
+        if challonge_tournament["started-at"] is not None:
+            converted["state"] = "started"
+        if challonge_tournament["completed-at"] is not None:
+            converted["state"] = "finished"
+
+        return converted
 
     def in_tournament(self, name, tournament_id):
         return any(p['name'] == name for p in self.tournaments[tournament_id]['participants'])
