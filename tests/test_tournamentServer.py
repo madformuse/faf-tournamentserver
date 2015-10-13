@@ -168,6 +168,15 @@ class TestTournamentServer:
         destroy.assert_called_with(challonge_tournament['id'], participant['id'])
         assert not server.in_tournament(participant['name'], challonge_tournament['id'])
 
+    def test_add_participant_without_errors(self, server, challonge_tournament):
+
+        with patch('challonge.participants.create') as create:
+            with patch.object(TournamentServer, 'seed_participants'):
+                with patch.object(TournamentServer, 'import_tournaments'):
+                    server.add_participant('Tom', challonge_tournament['id'])
+
+        create.assert_called_with(challonge_tournament['id'], 'Tom')
+
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):

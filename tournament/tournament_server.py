@@ -90,11 +90,13 @@ class TournamentServer(QtNetwork.QTcpServer):
 
     def add_participant(self, login, uid):
         challonge.participants.create(uid, login)
-
         self.seed_participants(uid)
 
-        self.log.debug("player added, reloading data")
+        self.logger.debug("player added, reloading data")
         self.import_tournaments()
+
+    def create_participant(self, name, user_id):
+        return {'name': name, 'id': user_id}
 
     def seed_participants(self, uid):
         participants = challonge.participants.index(uid)
