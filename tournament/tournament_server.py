@@ -49,7 +49,6 @@ class TournamentServer(QtNetwork.QTcpServer):
         for t in challonge.tournaments.index():
             uid = t["id"]
             self.tournaments[uid] = self._create_tournament(t)
-            check_participants = self.tournaments[uid]['state'] == 'started' and t['progress-meter'] == 0
 
             if t["open_signup"] is not None:
                 challonge.tournaments.update(uid, open_signup="false")
@@ -59,7 +58,7 @@ class TournamentServer(QtNetwork.QTcpServer):
             for p in challonge.participants.index(uid):
                 found = self.users.lookup_user(p["name"])
 
-                if check_participants and not (found and found['logged_in']):
+                if self._should_check_participants(self.tournaments[uid]) and not (found and found['logged_in']):
                     challonge.participants.destroy(uid, p["id"])
                 else:
                     if found and found['renamed']:
@@ -71,20 +70,20 @@ class TournamentServer(QtNetwork.QTcpServer):
                         "name": found['name'] if found else p['name']
                     })
 
-    def _create_tournament(self,challonge_tournament):
-        converted = {
-                "name": challonge_tournament["name"],
-                "url": challonge_tournament["full-challonge-url"],
-                "description": challonge_tournament["description"],
-                "type": challonge_tournament["tournament-type"],
-                "progress": challonge_tournament["progress-meter"],
-                "state": "open"
-        }
+    def _should_check_participants(self, tournament):
+        return tournament["state"] == "started" and tournament["progress"] == 0
 
-        if challonge_tournament["started-at"] is not None:
-            converted["state"] = "started"
-        if challonge_tournament["completed-at"] is not None:
-            converted["state"] = "finished"
+    def _create_tournament(self, challonge_tournament):
+        converted = {
+            "name": challonge_tournament["name"],
+            "url": challonge_tournament["full-challonge-url"],
+            "description": challonge_tournament["description"],
+            "type": challonge_tournament["tournament-type"],
+            "progress": challonge_tournament["progress-meter"],
+            "state": "started" if challonge_tournament["started-at"]
+            else "finished" if challonge_tournament["completed-at"]
+            else "open"
+        }
 
         return converted
 
