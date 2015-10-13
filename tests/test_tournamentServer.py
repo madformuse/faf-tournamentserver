@@ -176,6 +176,13 @@ class TestTournamentServer:
 
         create.assert_called_with(challonge_tournament['id'], 'Tom')
 
+    def test_state_error(self, challonge_tournament, server):
+        challonge_tournament['started-at'] = "Not None"
+        challonge_tournament['completed-at'] = "Not None"
+
+        # A bit naughty to test a private method but compared to everything else...
+        assert "finished" == server._create_tournament(challonge_tournament)["state"]
+
     def import_tournament(self, tournament, server, participants=None):
         with patch('challonge.tournaments.index', return_value=[tournament] if tournament else []):
             with patch('challonge.participants.index', return_value=[participants] if participants else []):

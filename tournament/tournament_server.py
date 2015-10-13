@@ -79,8 +79,8 @@ class TournamentServer(QtNetwork.QTcpServer):
             "description": challonge_tournament["description"],
             "type": challonge_tournament["tournament-type"],
             "progress": challonge_tournament["progress-meter"],
-            "state": "started" if challonge_tournament["started-at"]
-            else "finished" if challonge_tournament["completed-at"]
+            "state": "finished" if challonge_tournament["completed-at"]
+            else "started" if challonge_tournament["started-at"]
             else "open"
         }
 
