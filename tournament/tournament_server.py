@@ -47,25 +47,24 @@ class TournamentServer(QtNetwork.QTcpServer):
     def import_tournaments(self):
         self.tournaments = {}
         for t in challonge.tournaments.index():
-            uid = t["id"]
-            self.tournaments[uid] = self._create_tournament(t)
+            self.tournaments[t["id"]] = self._create_tournament(t)
 
             if t["open_signup"] is not None:
-                challonge.tournaments.update(uid, open_signup="false")
+                challonge.tournaments.update(t["id"], open_signup="false")
 
-            self.tournaments[uid]["participants"] = []
+            self.tournaments[t["id"]]["participants"] = []
 
-            for p in challonge.participants.index(uid):
+            for p in challonge.participants.index(t["id"]):
                 found = self.users.lookup_user(p["name"])
 
-                if self._should_check_participants(self.tournaments[uid]) and not (found and found['logged_in']):
-                    challonge.participants.destroy(uid, p["id"])
+                if self._should_check_participants(self.tournaments[t["id"]]) and not (found and found['logged_in']):
+                    challonge.participants.destroy(t["id"], p["id"])
                 else:
                     if found and found['renamed']:
                         self.logger.debug("player is replaced by %s", found['name'])
-                        challonge.participants.update(uid, p["id"], name=found['name'])
+                        challonge.participants.update(t["id"], p["id"], name=found['name'])
 
-                    self.tournaments[uid]["participants"].append({
+                    self.tournaments[t["id"]]["participants"].append({
                         "id": p["id"],
                         "name": found['name'] if found else p['name']
                     })
