@@ -21,7 +21,10 @@ class Tournament:
 
     @classmethod
     def _calculate_state(cls, tournament):
-        return "finished" if tournament["completed-at"] else \
-                "started" if tournament["started-at"] else \
-                "open"
+        if tournament["completed-at"]:
+            return "finished"
+        elif tournament["started-at"]:
+            return "started"
+        else:
+            return "open"
 
