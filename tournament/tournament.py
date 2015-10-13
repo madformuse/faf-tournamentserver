@@ -7,6 +7,16 @@ class Tournament:
         self.progress = progress
         self.state = state
 
+    def serialize(self):
+        return {
+            'name': self.name,
+            'url': self.url,
+            'description': self.description,
+            'type': self.type,
+            'state': self.state,
+            'participants': []
+        }
+
     @classmethod
     def from_challonge(cls, challonge_tournament):
 

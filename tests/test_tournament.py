@@ -26,3 +26,19 @@ class TestTournament:
         assert expected.url == actual.url
         assert expected.type == actual.type
         assert expected.description == actual.description
+
+    def test_serialize(self,challonge_tournament):
+
+        # Client expects the a certain subset of data back in a dictionary.
+        expected_format = {
+            "name": 'test',
+            "url": 'http://www.google.com',
+            "description": 'Amazing',
+            "type": 'dunno',
+            "state": 'open',
+            "participants": []
+        }
+
+        assert Tournament.from_challonge(challonge_tournament).serialize() == expected_format
+
+
